@@ -1,0 +1,6 @@
+TransactionID, CustomerID, Product, Amount, Date
+T001, C001, Laptop, 1200, 2024-01-01
+T002, C002, Phone, 800, 2024-01-02
+T003, C003, Tablet, 500, 2024-01-03
+T004, C001, Laptop, 1300, 2024-01-04
+T005, C002, Headphones, 150, 2024-01-05
