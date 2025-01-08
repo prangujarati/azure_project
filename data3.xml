@@ -1,0 +1,20 @@
+<Customers>
+  <Customer>
+    <CustomerID>1</CustomerID>
+    <Name>John Doe</Name>
+    <Age>30</Age>
+    <City>New York</City>
+  </Customer>
+  <Customer>
+    <CustomerID>2</CustomerID>
+    <Name>Jane Smith</Name>
+    <Age>25</Age>
+    <City>Los Angeles</City>
+  </Customer>
+  <Customer>
+    <CustomerID>3</CustomerID>
+    <Name>Alice Johnson</Name>
+    <Age>35</Age>
+    <City>Chicago</City>
+  </Customer>
+</Customers>

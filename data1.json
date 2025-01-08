@@ -1,0 +1,20 @@
+[
+  {
+    "CustomerID": 1,
+    "Name": "John Doe",
+    "Age": 30,
+    "City": "New York"
+  },
+  {
+    "CustomerID": 2,
+    "Name": "Jane Smith",
+    "Age": 25,
+    "City": "Los Angeles"
+  },
+  {
+    "CustomerID": 3,
+    "Name": "Alice Johnson",
+    "Age": 35,
+    "City": "Chicago"
+  }
+]
