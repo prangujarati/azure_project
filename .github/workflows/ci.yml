@@ -41,6 +41,9 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
+        run: |
+          echo "Running databricks version "
+          databricks --version
 
       - name: Check if wheel exists and upload to DBFS
         run: |
