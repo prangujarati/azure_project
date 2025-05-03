@@ -39,7 +39,7 @@ jobs:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}  # Not defined
         run: |
           echo "Running databricks version with invalid config"
-          databricks --version
+          databricks fs mkdirs dbfs:/FileStore/packages/Assign
 
       # Uncomment this to test correct config later
       # - name: Configure CLI correctly
