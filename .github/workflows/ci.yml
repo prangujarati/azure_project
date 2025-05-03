@@ -36,7 +36,7 @@ jobs:
       - name: Configure CLI with WRONG secret (test failure)
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}  # Not defined
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}  # Not defined
         run: |
           echo "Running databricks version with invalid config"
           databricks fs mkdirs dbfs:/FileStore/packages/Assign
