@@ -44,18 +44,3 @@ jobs:
         run: |
           echo "Running databricks version "
           databricks --version
-
-      - name: Check if wheel exists and upload to DBFS
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
-        run: |
-          # Check if the wheel file exists
-          WHL_PATH=$(ls dist/*.whl 2>/dev/null || echo "")
-          if [ -z "$WHL_PATH" ]; then
-            echo "❌ No .whl file found to upload"
-            exit 1
-          fi
-          echo "Uploading $WHL_PATH to DBFS..."
-          databricks fs cp --overwrite "$WHL_PATH" "dbfs:/FileStore/packages/Assign/"
-		   
