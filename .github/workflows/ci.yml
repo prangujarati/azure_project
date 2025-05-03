@@ -11,7 +11,7 @@ on:
 
 jobs:
   upload-wheel:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment: ${{ inputs.target_environment }}
 
     steps:
