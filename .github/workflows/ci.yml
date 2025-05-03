@@ -55,3 +55,7 @@ jobs:
           fi
           echo "Uploading $WHL_PATH to DBFS..."
           databricks fs cp --overwrite "$WHL_PATH" "dbfs:/FileStore/packages/Assign/"
+		 env: 
+		   DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+		   DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
+		   
