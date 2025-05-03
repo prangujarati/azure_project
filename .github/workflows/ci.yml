@@ -1,0 +1,51 @@
+name: Deploy to Databricks
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: 'Enter environment name: Development or Testing'
+        required: true
+        default: 'Development'
+        type: string
+
+jobs:
+  upload-wheel:
+    runs-on: self-hosted
+    environment: ${{ inputs.target_environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies and build wheel
+        run: |
+          pip install wheel
+          python setup.py bdist_wheel
+
+      - name: Install Databricks CLI
+        run: |
+          pip install 'databricks-cli<1.0.0'
+
+      # Intentional failure: using wrong secret name to simulate CLI config issue
+      - name: Configure CLI with WRONG secret (test failure)
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}  # Not defined
+        run: |
+          echo "Running databricks version with invalid config"
+          databricks --version
+
+      # Uncomment this to test correct config later
+      # - name: Configure CLI correctly
+      #   env:
+      #     DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
+      #   run: |
+      #     echo "Databricks CLI configured"
+      #     databricks fs mkdirs dbfs:/FileStore/packages/Assign
