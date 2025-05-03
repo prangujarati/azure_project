@@ -40,6 +40,7 @@ jobs:
         run: |
           echo "Running databricks version with invalid config"
           databricks fs mkdirs dbfs:/FileStore/packages/Assign
+          databricks fs cp --overwrite "dist/*.whl" "dbfs:/FileStore/packages/Assign/"
 
       # Uncomment this to test correct config later
       # - name: Configure CLI correctly
