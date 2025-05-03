@@ -28,25 +28,27 @@ jobs:
           pip install wheel
           python setup.py bdist_wheel
 
+      - name: List contents of dist folder
+        run: |
+          echo "Listing contents of dist/"
+          ls -l dist || echo "dist/ not found"
+
       - name: Install Databricks CLI
         run: |
           pip install 'databricks-cli<1.0.0'
 
-      # Intentional failure: using wrong secret name to simulate CLI config issue
-      - name: Configure CLI with WRONG secret (test failure)
+      - name: Configure CLI
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}  # Not defined
-        run: |
-          echo "Running databricks version with invalid config"
-          databricks fs mkdirs dbfs:/FileStore/packages/Assign
-          databricks fs cp --overwrite "dist/*.whl" "dbfs:/FileStore/packages/Assign/"
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
 
-      # Uncomment this to test correct config later
-      # - name: Configure CLI correctly
-      #   env:
-      #     DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
-      #   run: |
-      #     echo "Databricks CLI configured"
-      #     databricks fs mkdirs dbfs:/FileStore/packages/Assign
+      - name: Check if wheel exists and upload to DBFS
+        run: |
+          # Check if the wheel file exists
+          WHL_PATH=$(ls dist/*.whl 2>/dev/null || echo "")
+          if [ -z "$WHL_PATH" ]; then
+            echo "❌ No .whl file found to upload"
+            exit 1
+          fi
+          echo "Uploading $WHL_PATH to DBFS..."
+          databricks fs cp --overwrite "$WHL_PATH" "dbfs:/FileStore/packages/Assign/"
