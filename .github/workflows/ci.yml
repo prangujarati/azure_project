@@ -48,42 +48,6 @@ jobs:
           echo "Installed databricks-cli version:"
           databricks --version
 
-      - name: Validate Databricks credentials
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
-        run: |
-          # Validate secrets are set
-          if [ -z "$DATABRICKS_HOST" ]; then
-            echo "::error::DATABRICKS_HOST is not set"
-            exit 1
-          fi
-          
-          if [ -z "$DATABRICKS_TOKEN" ]; then
-            echo "::error::DATABRICKS_TOKEN is not set"
-            exit 1
-          fi
-          
-          # Validate host format
-          if [[ ! "$DATABRICKS_HOST" =~ ^https:// ]]; then
-            echo "::error::DATABRICKS_HOST should start with https://"
-            exit 1
-          fi
-          
-          echo "Credentials validation passed"
-
-      - name: Test Databricks connection
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
-        run: |
-          echo "Testing Databricks connection..."
-          if ! databricks fs ls "dbfs:/FileStore/"; then
-            echo "::error::Failed to connect to Databricks"
-            exit 1
-          fi
-          echo "Connection successful"
-
       - name: Upload wheel to DBFS
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
