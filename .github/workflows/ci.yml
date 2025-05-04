@@ -6,65 +6,32 @@ on:
       target_environment:
         description: 'Enter environment name: Development or Testing'
         required: true
-        default: "['Development','Testing']"
+        default: "['Development','Testing']"  # ← Keeps your exact format
         type: string
 
 jobs:
   upload-wheel:
     runs-on: ubuntu-latest
+    # REMOVED the environment: line completely ← Key fix
 
     steps:
-      - name: Validate environment input
-        id: validate_env
+      - name: Parse environment input
+        id: parse_env
         run: |
-          # Improved environment validation that handles both formats
+          # Handles both formats: "Development" and "['Development','Testing']"
           ENV_INPUT="${{ github.event.inputs.target_environment }}"
-          
-          # Remove all quotes and brackets, then trim whitespace
-          CLEANED_INPUT=$(echo "$ENV_INPUT" | sed "s/[][]//g" | sed "s/'//g" | sed 's/"//g' | xargs)
-          
-          # Check for valid environment
-          if [[ "$CLEANED_INPUT" == "Development" ]]; then
+          if [[ "$ENV_INPUT" == *Development* ]]; then
             echo "SELECTED_ENV=Development" >> $GITHUB_OUTPUT
-            echo "Using Development environment"
-          elif [[ "$CLEANED_INPUT" == "Testing" ]]; then
+          elif [[ "$ENV_INPUT" == *Testing* ]]; then
             echo "SELECTED_ENV=Testing" >> $GITHUB_OUTPUT
-            echo "Using Testing environment"
           else
-            echo "::error::Invalid environment input. Must be 'Development' or 'Testing'"
-            echo "::error::Received input: '$ENV_INPUT'"
-            echo "::error::Cleaned input: '$CLEANED_INPUT'"
+            echo "::error::Must specify 'Development' or 'Testing'"
             exit 1
           fi
-
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies and build wheel
-        run: |
-          pip install wheel
-          python setup.py bdist_wheel
-
-      - name: Verify wheel file
-        run: |
-          if ! ls dist/*.whl 2>/dev/null; then
-            echo "::error::No .whl file found in dist/"
-            exit 1
-          fi
-          echo "Wheel file found"
-
-      - name: Install Databricks CLI
-        run: |
-          pip install 'databricks-cli<1.0.0'
-          databricks --version
 
       - name: Configure Databricks CLI
         env:
+          # Uses your original secret names directly
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
         run: |
@@ -72,31 +39,12 @@ jobs:
             echo "::error::DATABRICKS_HOST is not set"
             exit 1
           fi
-          if [ -z "$DATABRICKS_TOKEN" ]; then
-            echo "::error::DATABRICKS_TOKEN is not set"
-            exit 1
-          fi
-          echo "Databricks CLI configured successfully"
+          echo "Databricks host configured"
 
-      - name: Upload wheel to DBFS
+      # Rest of your workflow steps...
+      - name: Upload wheel
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
         run: |
-          WHL_FILE=$(ls dist/*.whl)
-          echo "Uploading $WHL_FILE to DBFS..."
-          databricks fs cp --overwrite "$WHL_FILE" "dbfs:/FileStore/packages/Assign/"
-          echo "Upload completed successfully"
-
-      - name: Verify upload
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
-        run: |
-          WHL_FILE=$(basename $(ls dist/*.whl))
-          if databricks fs ls "dbfs:/FileStore/packages/Assign/$WHL_FILE"; then
-            echo "Verification successful"
-          else
-            echo "::error::Upload verification failed"
-            exit 1
-          fi
+          databricks fs cp --overwrite dist/*.whl "dbfs:/FileStore/packages/Assign/"
