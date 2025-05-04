@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       environments_to_use:
-        description: 'Available environments (e.g., "Development" or ["Development","Testing"])'
+        description: 'Enter environment (e.g., "Development" or ["Development","Testing"])'
         required: true
         default: '["Development","Testing","Staging","Production"]'
         type: string
@@ -13,18 +13,19 @@ jobs:
   upload-wheel:
     runs-on: ubuntu-latest
     
-    # Environment context removed since it was causing issues
-    # secrets: inherit removed since it conflicts with runs-on
-    
     steps:
       - name: Parse environment input
         id: parse_env
         run: |
-          # Handles both direct input and default array
+          # Handle both direct input and array format
           ENV_INPUT="${{ inputs.environments_to_use || '["Development","Testing","Staging","Production"]' }}"
           
-          # Extract first valid environment (supports both formats)
-          if [[ "$ENV_INPUT" =~ \"Development\" ]]; then
+          # Check for direct environment name first
+          if [[ "$ENV_INPUT" == "Development" || "$ENV_INPUT" == "Testing" || 
+                "$ENV_INPUT" == "Staging" || "$ENV_INPUT" == "Production" ]]; then
+            echo "SELECTED_ENV=$ENV_INPUT" >> $GITHUB_OUTPUT
+          # Check for array format
+          elif [[ "$ENV_INPUT" =~ \"Development\" ]]; then
             echo "SELECTED_ENV=Development" >> $GITHUB_OUTPUT
           elif [[ "$ENV_INPUT" =~ \"Testing\" ]]; then
             echo "SELECTED_ENV=Testing" >> $GITHUB_OUTPUT
@@ -33,21 +34,20 @@ jobs:
           elif [[ "$ENV_INPUT" =~ \"Production\" ]]; then
             echo "SELECTED_ENV=Production" >> $GITHUB_OUTPUT
           else
-            echo "::error::No valid environment found in: $ENV_INPUT"
+            echo "::error::Invalid environment input: $ENV_INPUT"
+            echo "::error::Must be one of: Development, Testing, Staging, Production"
             exit 1
           fi
+          
           echo "Using environment: $SELECTED_ENV"
 
       - name: Configure Databricks CLI
         env:
-          # Explicit secret references (since we can't use secrets: inherit)
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
         run: |
           if [ -z "$DATABRICKS_HOST" ]; then
-            echo "::error::DATABRICKS_HOST not found. Verify:"
-            echo "::error::1. Secret exists in repository settings"
-            echo "::error::2. Workflow has correct permissions"
+            echo "::error::DATABRICKS_HOST secret not found"
             exit 1
           fi
           echo "Successfully configured Databricks CLI"
