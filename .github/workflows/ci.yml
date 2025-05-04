@@ -17,17 +17,23 @@ jobs:
       - name: Validate environment input
         id: validate_env
         run: |
-          # Extract and validate environment from input
+          # Improved environment validation that handles both formats
           ENV_INPUT="${{ github.event.inputs.target_environment }}"
-          if [[ "$ENV_INPUT" == *'"Development"'* ]]; then
-            echo "Using Development environment"
+          
+          # Remove all quotes and brackets, then trim whitespace
+          CLEANED_INPUT=$(echo "$ENV_INPUT" | sed "s/[][]//g" | sed "s/'//g" | sed 's/"//g' | xargs)
+          
+          # Check for valid environment
+          if [[ "$CLEANED_INPUT" == "Development" ]]; then
             echo "SELECTED_ENV=Development" >> $GITHUB_OUTPUT
-          elif [[ "$ENV_INPUT" == *'"Testing"'* ]]; then
-            echo "Using Testing environment"
+            echo "Using Development environment"
+          elif [[ "$CLEANED_INPUT" == "Testing" ]]; then
             echo "SELECTED_ENV=Testing" >> $GITHUB_OUTPUT
+            echo "Using Testing environment"
           else
-            echo "::error::Input must contain either 'Development' or 'Testing'"
+            echo "::error::Invalid environment input. Must be 'Development' or 'Testing'"
             echo "::error::Received input: '$ENV_INPUT'"
+            echo "::error::Cleaned input: '$CLEANED_INPUT'"
             exit 1
           fi
 
@@ -44,69 +50,53 @@ jobs:
           pip install wheel
           python setup.py bdist_wheel
 
-      - name: List contents of dist folder
+      - name: Verify wheel file
         run: |
-          echo "Listing contents of dist/"
-          ls -l dist || echo "dist/ not found"
+          if ! ls dist/*.whl 2>/dev/null; then
+            echo "::error::No .whl file found in dist/"
+            exit 1
+          fi
+          echo "Wheel file found"
 
       - name: Install Databricks CLI
         run: |
           pip install 'databricks-cli<1.0.0'
+          databricks --version
 
-      - name: Verify Databricks credentials
+      - name: Configure Databricks CLI
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
         run: |
-          # Validate credentials are set (without exposing values)
           if [ -z "$DATABRICKS_HOST" ]; then
-            echo "::error::DATABRICKS_HOST secret is not configured"
+            echo "::error::DATABRICKS_HOST is not set"
             exit 1
           fi
           if [ -z "$DATABRICKS_TOKEN" ]; then
-            echo "::error::DATABRICKS_TOKEN_ST_MP secret is not configured"
+            echo "::error::DATABRICKS_TOKEN is not set"
             exit 1
           fi
-          echo "Credentials validation passed"
-
-      - name: Test Databricks connection
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
-        run: |
-          echo "Testing connection to Databricks workspace..."
-          if ! databricks --version; then
-            echo "::error::Failed to connect to Databricks"
-            exit 1
-          fi
-          echo "Connection successful"
+          echo "Databricks CLI configured successfully"
 
       - name: Upload wheel to DBFS
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
         run: |
-          WHL_PATH=$(ls dist/*.whl 2>/dev/null || echo "")
-          if [ -z "$WHL_PATH" ]; then
-            echo "❌ No .whl file found to upload"
-            exit 1
-          fi
-          echo "Uploading $WHL_PATH to DBFS..."
-          if ! databricks fs cp --overwrite "$WHL_PATH" "dbfs:/FileStore/packages/Assign/"; then
-            echo "::error::Failed to upload wheel file"
-            exit 1
-          fi
-          echo "✅ Upload successful"
+          WHL_FILE=$(ls dist/*.whl)
+          echo "Uploading $WHL_FILE to DBFS..."
+          databricks fs cp --overwrite "$WHL_FILE" "dbfs:/FileStore/packages/Assign/"
+          echo "Upload completed successfully"
 
-      - name: Verify uploaded file
+      - name: Verify upload
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_ST_MP }}
         run: |
           WHL_FILE=$(basename $(ls dist/*.whl))
-          echo "Verifying $WHL_FILE in DBFS..."
-          if ! databricks fs ls "dbfs:/FileStore/packages/Assign/$WHL_FILE"; then
+          if databricks fs ls "dbfs:/FileStore/packages/Assign/$WHL_FILE"; then
+            echo "Verification successful"
+          else
             echo "::error::Upload verification failed"
             exit 1
           fi
-          echo "✅ Verification passed"
