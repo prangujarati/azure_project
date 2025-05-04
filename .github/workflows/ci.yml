@@ -6,7 +6,7 @@ on:
       target_environment:
         description: 'Enter environment name: Development or Testing'
         required: true
-        default: "Development"
+        default: "['Development','Testing']"
         type: string
 
 jobs:
