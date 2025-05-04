@@ -7,10 +7,10 @@ on:
         description: 'Enter environment name: Development or Testing'
         required: true
         default: "['Development','Testing']"
-        type: choice
-        options:
-          - Development
-          - Testing
+        type: string
+        #options:
+         # - Development
+         # - Testing
 
 jobs:
   upload-wheel:
